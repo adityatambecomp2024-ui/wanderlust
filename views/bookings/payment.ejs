@@ -1,0 +1,153 @@
+<% layout("/layout/boilerplate") %>
+
+<div class="container mt-5">
+  <div class="row justify-content-center">
+    <div class="col-lg-5">
+
+      <div class="card shadow-lg border-0 rounded-4 p-4">
+        
+        <h3 class="fw-bold text-center mb-4">💳 Complete Payment</h3>
+
+        <!-- Booking Summary -->
+        <div class="bg-light rounded-3 p-3 mb-4">
+          <h5 class="fw-bold"><%= listing.title %></h5>
+          <p class="mb-1">📅 Check-in: <b><%= new Date(booking.startDate).toDateString() %></b></p>
+          <p class="mb-1">📅 Check-out: <b><%= new Date(booking.endDate).toDateString() %></b></p>
+          <p class="mb-1">🌙 Nights: <b><%= days %></b></p>
+          <p class="mb-1">👥 Guests: <b><%= booking.guests %></b></p>
+          <hr>
+          <h4 class="text-success fw-bold">Total: ₹ <%= totalAmount %></h4>
+        </div>
+
+        <!-- Card Details -->
+        <div class="mb-3">
+          <label class="fw-bold">Card Number</label>
+          <input type="text" class="form-control" 
+                 placeholder="1234 5678 9012 3456"
+                 maxlength="19" id="cardNumber">
+          <small class="text-muted">16 digit card number</small>
+        </div>
+
+        <div class="mb-3">
+          <label class="fw-bold">Card Holder Name</label>
+          <input type="text" class="form-control" 
+                 placeholder="Your Full Name" id="cardName">
+        </div>
+
+        <div class="row mb-3">
+          <div class="col">
+            <label class="fw-bold">Expiry Date</label>
+            <input type="text" class="form-control" 
+                   placeholder="MM/YY" maxlength="5" id="expiry">
+          </div>
+          <div class="col">
+            <label class="fw-bold">CVV</label>
+            <input type="password" class="form-control" 
+                   placeholder="123" maxlength="3" id="cvv">
+          </div>
+        </div>
+
+        <!-- Error message -->
+        <div id="errorMsg" class="alert alert-danger d-none mb-3"></div>
+
+        <!-- Pay Button -->
+        <form method="POST" 
+              action="/bookings/confirm/<%= booking._id %>"
+              id="paymentForm">
+          <button type="button" 
+                  class="btn btn-success w-100 py-3 fw-bold fs-5"
+                  id="payBtn"
+                  onclick="validateAndPay()">
+            💳 Pay ₹ <%= totalAmount %>
+          </button>
+        </form>
+
+        <p class="text-center text-muted mt-3 small">
+          🔒 Secured Payment Gateway
+        </p>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ✅ Card number formatting - spaces add होतात
+document.getElementById("cardNumber").addEventListener("input", function(e) {
+    let value = e.target.value.replace(/\D/g, "");
+    value = value.match(/.{1,4}/g)?.join(" ") || value;
+    e.target.value = value;
+});
+
+// ✅ Expiry formatting
+document.getElementById("expiry").addEventListener("input", function(e) {
+    let value = e.target.value.replace(/\D/g, "");
+    if (value.length >= 2) {
+        value = value.substring(0, 2) + "/" + value.substring(2, 4);
+    }
+    e.target.value = value;
+});
+
+// ✅ CVV - only numbers
+document.getElementById("cvv").addEventListener("input", function(e) {
+    e.target.value = e.target.value.replace(/\D/g, "");
+});
+
+function showError(msg) {
+    const errorDiv = document.getElementById("errorMsg");
+    errorDiv.textContent = msg;
+    errorDiv.classList.remove("d-none");
+    setTimeout(() => {
+        errorDiv.classList.add("d-none");
+    }, 3000);
+}
+
+function validateAndPay() {
+    const card = document.getElementById("cardNumber").value.replace(/\s/g, "");
+    const name = document.getElementById("cardName").value.trim();
+    const expiry = document.getElementById("expiry").value;
+    const cvv = document.getElementById("cvv").value;
+
+    // ✅ Card number validation
+    if (card.length !== 16 || isNaN(card)) {
+        showError("❌ Please enter valid 16 digit card number!");
+        return;
+    }
+
+    // ✅ Name validation
+    if (name === "") {
+        showError("❌ Please enter card holder name!");
+        return;
+    }
+
+    // ✅ Expiry validation
+    if (expiry.length !== 5) {
+        showError("❌ Please enter valid expiry date (MM/YY)!");
+        return;
+    }
+
+    // ✅ Month validation
+    const month = parseInt(expiry.substring(0, 2));
+    if (month < 1 || month > 12) {
+        showError("❌ Please enter valid month (01-12)!");
+        return;
+    }
+
+    // ✅ CVV validation
+    if (cvv.length !== 3 || isNaN(cvv)) {
+        showError("❌ Please enter valid 3 digit CVV!");
+        return;
+    }
+
+    // ✅ Processing animation
+    const btn = document.getElementById("payBtn");
+    btn.innerHTML = "⏳ Processing Payment...";
+    btn.disabled = true;
+    btn.classList.remove("btn-success");
+    btn.classList.add("btn-secondary");
+
+    setTimeout(() => {
+        document.getElementById("paymentForm").submit();
+    }, 2000);
+}
+</script>

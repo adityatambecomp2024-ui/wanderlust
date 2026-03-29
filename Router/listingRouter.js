@@ -1,51 +1,48 @@
-
+require('dotenv').config();
 const mbxClient = require('@mapbox/mapbox-sdk/services/geocoding');
-const accesstoken=process.env.MAP_TOKEN;
-
+const accesstoken = process.env.MAP_TOKEN;
 const geocodingClient = mbxClient({ accessToken: accesstoken });
 
+const express = require("express");
+const router = express.Router();
+const ListingModel = require("../model/Listing.js"); // ✅ नाव बदललं
+const wrapAsync = require("../utils/wrapAsync.js");
+const { isloggedin, isOwwner } = require("../middleware.js");
+const { storage } = require("../cloudinary_config.js");
+const multer = require('multer');
+const upload = multer({ storage }).array('image', 10);
+const UserVisit = require('../model/userVisit.js');
+const tracker = require("../utils/HitTracker.js");
+const user = require("../model/user.js");
 
-
-const express=require("express");
-const app=express();
-const router=express.Router();
-const passport=require("passport");
-const Listing=require("../model/Listing.js");
-const wrapAsync=require("../utils/wrapAsync.js");
-const ExpressError=require("../utils/ExpreesError.js");
-
-const {listingValidation,reviewValidation}=require("../Schema.js");
-const {isloggedin,isOwwner}=require("../middleware.js");
-const {storage}=require("../clodinary_config.js");
-app.use(express.urlencoded({ extended: true }));
-app.use(express.json());
-const multer  = require('multer');
-const upload = multer({storage }).array('image', 10);
-// const uploadMultiple=upload.fields([{name:'listing[image]',maxCount:5}]);
-const UserVisit = require('../model/userVisit.js'); // Create this model
-router.get("/search", wrapAsync(async (req, res) => {
-    const { query } = req.query;
+// ✅ 1. INDEX ROUTE
+router.get("/", wrapAsync(async (req, res) => {
+    const alllist = await ListingModel.find({});
     const { customerId, deviceId, websiteId } = req.query;
     tracker.visitWebsite(customerId, deviceId, websiteId);
     const count = tracker.getOverallWebsiteHitCount(websiteId);
-    const visit=await UserVisit.find({});
-    let count2=0;
-    for(let i in visit){
-        count2++;
-    }
+    const visit = await UserVisit.find({});
+    let count2 = visit.length;
+    const userreg = await user.find({});
+    let count3 = userreg.length;
+    res.render("./listing/index.ejs", { alllist, count, count2, count3 });
+}))
 
-    const userreg=await user.find({});
-    let count3=0;
-    for(let i in userreg){
-        count3++;
-    }
-    console.log(query);
+// ✅ 2. SEARCH ROUTE
+router.get("/search", wrapAsync(async (req, res) => {
+    const { query, customerId, deviceId, websiteId } = req.query;
+    tracker.visitWebsite(customerId, deviceId, websiteId);
+    const count = tracker.getOverallWebsiteHitCount(websiteId);
+    const visit = await UserVisit.find({});
+    let count2 = visit.length;
+    const userreg = await user.find({});
+    let count3 = userreg.length;
+
     if (!query) {
         req.flash("error", "Please enter a search term");
         return res.redirect("/listing");
     }
-
-    const listings = await Listing.find({
+    const listings = await ListingModel.find({
         $or: [
             { title: { $regex: query, $options: 'i' } },
             { description: { $regex: query, $options: 'i' } },
@@ -53,134 +50,91 @@ router.get("/search", wrapAsync(async (req, res) => {
             { country: { $regex: query, $options: 'i' } }
         ]
     });
-
-    res.render("./listing/index.ejs", { alllist: listings,count,count2,count3 });
+    res.render("./listing/index.ejs", { alllist: listings, count, count2, count3 });
 }));
 
-
-const tracker = require("../utils/HitTracker.js");
-//add new route
-router.get("/new",isloggedin,(req,res,next)=>{
+// ✅ 3. NEW ROUTE
+router.get("/new", isloggedin, (req, res) => {
     res.render("./listing/add.ejs");
-    
-    
 })
-router.get("/:id/edit",upload,isloggedin,wrapAsync(async(req,res)=>{
-   
-    let {id}=req.params;
-    const listing=await Listing.findById(id);
-    
-    
+
+// ✅ 4. EDIT ROUTE
+router.get("/:id/edit", upload, isloggedin, wrapAsync(async (req, res) => {
+    let { id } = req.params;
+    const listing = await ListingModel.findById(id);
+    if (!listing) {
+        req.flash("error", "Listing you access to edit is already deleted");
+        return res.redirect("/listing");
+    }
     const editImageUrl = listing.image.map(image => {
         return image.path.replace("/upload", "/upload/h_300,w_250");
     });
-    if(!listing){
-        req.flash("error","Listing you access to edit is already deleted");
-        res.redirect("/listing");
-
-    }
-    res.render("./listing/update.ejs",{listing,editImageUrl});
+    res.render("./listing/update.ejs", { listing, editImageUrl });
 }))
-router.post("/",upload,wrapAsync(async(req,res)=>{
-    const response= await geocodingClient.forwardGeocode({
+
+// ✅ 5. CREATE POST
+router.post("/", isloggedin, upload, wrapAsync(async (req, res) => {
+    const response = await geocodingClient.forwardGeocode({
         query: req.body.listing.location,
         limit: 1
-      })
-        .send()
-        
-//    console.log(response.body.features);
-//    res.send("done");
-    
-    
-    const newlisting=new Listing(req.body.listing);
-    
+    }).send();
+
+    const newlisting = new ListingModel(req.body.listing);
     newlisting.image = req.files.map(file => ({
         path: file.path,
         filename: file.filename
     }));
-    
-    newlisting.owner=req.user._id;
-    newlisting.geometry=response.body.features[0].geometry;
+    newlisting.owner = req.user._id;
+    newlisting.geometry = response.body.features.length > 0
+        ? response.body.features[0].geometry
+        : { type: "Point", coordinates: [0, 0] };
+
     await newlisting.save();
-    console.log(newlisting);
-    req.flash("success","new listing added sucessfully");
+    req.flash("success", "New listing added successfully");
     res.redirect("/listing");
 }))
 
+// ✅ 6. SHOW ROUTE
+router.get("/:id", wrapAsync(async (req, res) => {
+    let { id } = req.params;
+    const list = await ListingModel.findById(id)
+        .populate("Hotel")
+        .populate({ path: "review", populate: { path: "author" } })
+        .populate("owner");
 
-
-//show route
-router.get("/:id",wrapAsync(async(req,res)=>{
-    let {id}=req.params;
-    const list= await Listing.findById(id).populate("Hotel").populate({path:"review",populate:({path:"author"})}).populate("owner");
-    if(!list){
-        req.flash("error","Listing you access is already deleted");
-        res.redirect("/listing");
-
+    if (!list) {
+        req.flash("error", "Listing you access is already deleted");
+        return res.redirect("/listing");
     }
-        res.render("./listing/show.ejs",{list});
-    
-    
+
+    console.log("Hotel array:", list.Hotel);
+    console.log("Hotel length:", list.Hotel ? list.Hotel.length : 0);
+
+    res.render("./listing/show.ejs", { list });
 }))
 
-//update
-router.put("/:id",upload,isOwwner,wrapAsync(async(req,res,next)=>{
-    // let {error}=listingValidation.validate(req.body);
-    // console.log(error);
-    // if(error){
-    //      throw new ExpressError(400,error);
-    // }else{
-    //     next();
-    // }
-    let {id}=req.params;
-    const updatedListing=await Listing.findByIdAndUpdate(id,{...req.body.list} );
+// ✅ 7. UPDATE
+router.put("/:id", upload, isOwwner, wrapAsync(async (req, res) => {
+    let { id } = req.params;
+    const updatedListing = await ListingModel.findByIdAndUpdate(id, { ...req.body.listing });
     if (req.files && req.files.length > 0) {
         const newImages = req.files.map(file => ({
             path: file.path,
             filename: file.filename
         }));
-        updatedListing.images.push(...newImages); // Add new images to existing ones
+        updatedListing.image.push(...newImages);
         await updatedListing.save();
     }
-    
-    req.flash("success","Listing updated sucessfully");
+    req.flash("success", "Listing updated successfully");
     res.redirect("/listing");
 }))
 
-router.delete("/:id",isOwwner,isloggedin,wrapAsync(async(req,res)=>{
-    let {id}=req.params;
-    const list=await Listing.findByIdAndDelete(id);
-    
-    req.flash("success","Listing Deleted sucessfully");
+// ✅ 8. DELETE
+router.delete("/:id", isOwwner, isloggedin, wrapAsync(async (req, res) => {
+    let { id } = req.params;
+    await ListingModel.findByIdAndDelete(id);
+    req.flash("success", "Listing Deleted successfully");
     res.redirect("/listing");
-    
 }))
-const user=require("../model/user.js");
-//new route
-router.get("/",wrapAsync(async(req,res)=>{
-   
-    const alllist=await Listing.find({});
-    const { customerId, deviceId, websiteId } = req.query;
-    tracker.visitWebsite(customerId, deviceId, websiteId);
-    const count = tracker.getOverallWebsiteHitCount(websiteId);
-    const count1 = tracker.getWebsiteVisitCountForCustomer(customerId, websiteId);
-    console.log(req.query.deviceId);
-    console.log(count);
-    console.log(customerId);
-    
-    const visit=await UserVisit.find({});
-    let count2=0;
-    for(let i in visit){
-        count2++;
-    }
 
-    const userreg=await user.find({});
-    let count3=0;
-    for(let i in userreg){
-        count3++;
-    }
-    //res.send();
-   res.render("./listing/index.ejs",{alllist,count,count2,count3});
-}) )
-
-module.exports=router;
+module.exports = router;

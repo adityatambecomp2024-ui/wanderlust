@@ -9,7 +9,7 @@ const {listingValidation,reviewValidation}=require("../Schema.js");
 const {urlredirect,isloggedin,isauthor}=require("../middleware.js");
 
 const wrapAsync=require("../utils/wrapAsync.js");
-const ExpressError=require("../utils/ExpreesError.js");
+const ExpressError=require("../utils/ExpressError.js");
 
 
 //review

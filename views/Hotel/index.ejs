@@ -1,180 +1,180 @@
-<% layout("./layout/boilerplate.ejs")%>
-<body>
-    <style>
-        body {
-    font-family: Arial, sans-serif;
-    margin: 0;
-    padding: 0;
-}
+<% layout("./layout/boilerplate.ejs") %>
 
-#filters {
-    display: flex;
-    flex-wrap: wrap; /* Allow wrapping */
-    justify-content: center;
-    gap: 1rem; /* Space between filters */
-}
+<div class="container mt-4">
 
-.filter, #filters a {
-    text-align: center;
-    opacity: 0.7;
-    transition: opacity 0.3s ease;
-}
+  <h2 class="mb-4">Available Hotels</h2>
 
-.filter:hover {
-    opacity: 1;
-    cursor: pointer;
-}
+  <div class="row row-cols-lg-4 row-cols-md-3 row-cols-sm-1 g-4">
 
-.filter i {
-    font-size: 1.5rem;
-    
-}
+    <% if(list.Hotel && list.Hotel.length > 0){ %>
 
-#filters a {
-    text-decoration: none;
-    color: black;
-}
+      <% list.Hotel.forEach(li => { %>
 
-/* Responsive Styles */
+        <div class="col">
+          <div class="card h-100">
 
-/* Small devices (phones, less than 768px) */
-@media (max-width: 767px) {
-    #filters {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr); /* Three filters per row */
-        gap: 1rem; /* Space between grid items */
-    }
+            <!-- ✅ Hotel click केल्यावर show page उघडेल -->
+            <a href="/listing/<%= id %>/hotels/<%= li._id %>" 
+               style="text-decoration:none; color:black">
 
-    .filter, #filters a {
-        font-size: 1rem;
-        margin: 0.5rem 0;
-        padding: 1rem; /* Add padding for better touch targets */
-    }
-
-    .row-cols-lg-3 .card,
-    .row-cols-md-2 .card,
-    .row-cols-sm-1 .card {
-        width: 90%;
-        margin: 0.5rem auto; /* Center cards on mobile */
-    }
-}
-
-/* Medium devices (tablets, 768px and up) */
-@media (min-width: 768px) and (max-width: 991px) {
-    #filters {
-        justify-content: space-around; /* Spread filters evenly */
-        display: flex; /* Use flex for tablets and above */
-    }
-
-    .filter, #filters a {
-        font-size: 1.2rem;
-        margin: 0.5rem 1rem;
-    }
-
-    .row-cols-lg-3 .card,
-    .row-cols-md-2 .card,
-    .row-cols-sm-1 .card {
-        width: 45%;
-        margin: 1rem; /* Space between cards */
-    }
-}
-
-/* Large devices (desktops, 992px and up) */
-@media (min-width: 992px) {
-    #filters {
-        justify-content: space-between; /* Spread filters to the edges */
-        display: flex; /* Use flex for desktops and above */
-    }
-
-    .filter, #filters a {
-        font-size: 1.5rem;
-        margin: 0.5rem 2rem;
-    }
-
-    .row-cols-lg-3 .card,
-    .row-cols-md-2 .card,
-    .row-cols-sm-1 .card {
-        width: 30%;
-        margin: 1rem; /* Space between cards */
-    }
-}
-
-    </style>
-    <div  id="filters" class="f-div mt-3">
-        <div class="filter">
-            <div ><i class="fa-brands fa-fort-awesome"></i></div>
-            <p>castles</p>
-        </div>
-        <div class="filter">
-            <div ><i class="fa-brands fa-fort-awesome"></i></div>
-            <p>castles</p>
-        </div>
-        <div class="filter">
-            <div ><i class="fa-brands fa-fort-awesome"></i></div>
-            <p>castles</p>
-        </div>
-        <div class="filter">
-            <div ><i class="fa-brands fa-fort-awesome"></i></div>
-            <p>castles</p>
-        </div>
-        <div class="filter">
-            <div ><i class="fa-brands fa-fort-awesome"></i></div>
-            <p>castles</p>
-        </div>
-        <div class="filter">
-            <div ><i class="fa-brands fa-fort-awesome"></i></div>
-            <p>castles</p>
-        </div>
-        
-        
-        <div class="switch-info">
-            <div class="form-check  form-switch">
-                <label class="form-check-label" for="flexSwitchCheckDefault">Display Total Before Taxes</label>
-                <input class="form-check-input" type="checkbox" id="flexSwitchCheckDefault">
-            </div>
-        </div>
-    </div>
-    
-    <ul>
-        
-        <div class="row row-cols-md-2 row-cols-lg-4 row-cols-sm-1">
-            
-            <% for(let li of list.Hotel){ %>
-            <a class="li-link" href="/listing/<%=id%>/hotels/<%=li._id%>">
-                <div class="card col card-listing" style="width: 15rem">
-                    <% if (li.image && li.image.length >= 0) { %>
-                        <img src="<%= li.image[0].path %>" class="card-img-top" style="height: 15rem" alt="...">
-                      <% } else { %>
-                        <img src="/list" class="card-img-top" style="height: 15rem" alt="Default Image">
-                      <% } %>
-                    <div class="card-img-overlay"></div>
-                    <div class="card-body">
-                    <p class="card-text">
-                        <b><%=li.title%></b> <br>
-                        &#8377;<%=li%>
-                        <i class="hidden">&nbsp; + 18% GST</i>
-                    </p>
-                    
-                    </div>
+              <!-- ✅ Hotel Photos Carousel -->
+              <% if(li.image && li.image.length > 1){ %>
+                <div id="carousel-<%= li._id %>" 
+                     class="carousel slide" 
+                     data-bs-ride="carousel">
+                  <div class="carousel-inner">
+                    <% li.image.forEach((img, i) => { %>
+                      <div class="carousel-item <%= i === 0 ? 'active' : '' %>">
+                        <img src="<%= img.path %>" 
+                             class="card-img-top" 
+                             style="height:200px; object-fit:cover;">
+                      </div>
+                    <% }) %>
+                  </div>
+                  <button class="carousel-control-prev" 
+                          type="button" 
+                          data-bs-target="#carousel-<%= li._id %>" 
+                          data-bs-slide="prev"
+                          onclick="event.preventDefault()">
+                    <span class="carousel-control-prev-icon"></span>
+                  </button>
+                  <button class="carousel-control-next" 
+                          type="button" 
+                          data-bs-target="#carousel-<%= li._id %>" 
+                          data-bs-slide="next"
+                          onclick="event.preventDefault()">
+                    <span class="carousel-control-next-icon"></span>
+                  </button>
                 </div>
+              <% } else if(li.image && li.image.length === 1){ %>
+                <img src="<%= li.image[0].path %>" 
+                     class="card-img-top" 
+                     style="height:200px; object-fit:cover;">
+              <% } else { %>
+                <div class="bg-light d-flex align-items-center 
+                            justify-content-center" 
+                     style="height:200px">
+                  <p class="text-muted">No photo</p>
+                </div>
+              <% } %>
+
+              <div class="card-body">
+                <h5 class="card-title"><%= li.title %></h5>
+                <p class="card-text text-muted">
+                  📍 <%= li.location %>
+                </p>
+                <p class="card-text fw-bold text-success">
+                  ₹ <%= li.price %> / night
+                </p>
+                <!-- ✅ Rooms count दाखवा -->
+                <% if(li.rooms && li.rooms.length > 0){ %>
+                  <p class="card-text">
+                    🛏️ <%= li.rooms.length %> Room types available
+                  </p>
+                <% } %>
+              </div>
+
             </a>
-            <% } %>
+
+            <div class="card-footer p-2">
+              <% if(userData){ %>
+                <button class="btn btn-success btn-sm w-100"
+                  onclick="openBookingForm('<%= li._id %>', '<%= li.title %>')">
+                  Book Now
+                </button>
+              <% } else { %>
+                <a href="/login" class="btn btn-primary btn-sm w-100">
+                  Login to Book
+                </a>
+              <% } %>
+            </div>
+
+          </div>
         </div>
-            
-       
-    </ul>
-    
-</body>
+
+      <% }) %>
+
+    <% } else { %>
+
+      <div class="col-12 text-center mt-5">
+        <h4>No hotels available</h4>
+      </div>
+
+    <% } %>
+
+  </div>
+
+</div>
+
+<!-- Booking Modal -->
+<div class="modal fade" id="bookingModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h5 class="modal-title">Book Hotel</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <form id="bookingForm" method="POST">
+        <div class="modal-body">
+
+          <div class="mb-3">
+            <label>Hotel</label>
+            <input type="text" id="hotelTitle" class="form-control" readonly>
+          </div>
+
+          <div class="row">
+            <div class="col">
+              <label>Check-in</label>
+              <input type="date" name="booking[startDate]" 
+                     class="form-control" id="startDate" required>
+            </div>
+            <div class="col">
+              <label>Check-out</label>
+              <input type="date" name="booking[endDate]" 
+                     class="form-control" id="endDate" required>
+            </div>
+          </div>
+
+          <div class="mt-3">
+            <label>Guests</label>
+            <input type="number" name="booking[guests]" 
+                   class="form-control" value="1" min="1" max="10">
+          </div>
+
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" 
+                  data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-success">
+            Confirm Booking
+          </button>
+        </div>
+      </form>
+
+    </div>
+  </div>
+</div>
+
 <script>
-    let tax=document.getElementById("flexSwitchCheckDefault");
-    tax.addEventListener("click",()=>{
-        let taxInfo=document.getElementsByClassName("hidden");
-        for(let info of taxInfo){
-            if(info.style.display!="inline"){
-                info.style.display="inline";
-            }else{
-                info.style.display="none";
-            }
-        }
-    })
+function openBookingForm(hotelId, hotelTitle) {
+  document.getElementById("hotelTitle").value = hotelTitle;
+  document.getElementById("bookingForm").action =
+    "/listing/<%= id %>/hotels/" + hotelId + "/bookings";
+
+  const today = new Date().toISOString().split("T")[0];
+  document.getElementById("startDate").min = today;
+  document.getElementById("endDate").min = today;
+
+  const modal = new bootstrap.Modal(
+    document.getElementById("bookingModal")
+  );
+  modal.show();
+
+  document.getElementById("startDate").addEventListener("change", function() {
+    document.getElementById("endDate").min = this.value;
+  });
+}
 </script>

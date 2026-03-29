@@ -7,6 +7,11 @@ const wrapAsync=require("../utils/wrapAsync.js");
 
 const {urlredirect}=require("../middleware.js");
 
+// Root route
+router.get("/", (req, res) => {
+    res.redirect("/listing");
+});
+
 //signup get
 router.get("/signUp",async(req,res,next)=>{
     res.render("./users/signUp.ejs");
@@ -41,7 +46,6 @@ router.get("/login",async(req,res,next)=>{
   
 // })
 router.post("/login",passport.authenticate('local',{failureRedirect:'/login',failureFlash:true}),(req,res)=>{
-    console.log(res);
     req.flash("success","welcome back to wunderlust");
      res.redirect("/listing");
 })

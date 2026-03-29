@@ -18,3 +18,11 @@ module.exports.listingreview=Joi.object({
     }).required(),
 })
 
+module.exports.bookingValidation = Joi.object({
+    booking: Joi.object({
+        startDate: Joi.date().required(),
+        // Allow same-day bookings (endDate can be equal to startDate)
+        endDate: Joi.date().min(Joi.ref('startDate')).required(),
+        guests: Joi.number().integer().min(1).max(10).optional()
+    }).required()
+});
