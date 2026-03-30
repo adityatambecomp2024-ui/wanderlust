@@ -1,86 +1,3 @@
-<!-- <% layout("/layout/boilerplate") %>
-
-<div class="container mt-4">
-
-  <h2 class="mb-4">🏨 My Bookings</h2>
-
-  <% if(bookings && bookings.length > 0){ %>
-
-    <div class="row">
-      <% bookings.forEach(booking => { %>
-
-        <div class="col-lg-4 col-md-6 mb-4">
-          <div class="card h-100 shadow-sm">
-
-            <% if(booking.hotel && booking.hotel.image && booking.hotel.image.length > 0){ %>
-              <img src="<%= booking.hotel.image[0].path %>" 
-                   class="card-img-top" 
-                   style="height:200px; object-fit:cover;">
-            <% } %>
-
-            <div class="card-body">
-
-              <h5 class="card-title">
-                <%= booking.hotel ? booking.hotel.title : "Hotel Deleted" %>
-              </h5>
-
-              <p class="text-muted">
-                📍 <%= booking.hotel ? booking.hotel.location : "-" %>
-              </p>
-
-              <hr>
-
-              <p>
-                <b>Check-in:</b> 
-                <%= new Date(booking.startDate).toDateString() %>
-              </p>
-              <p>
-                <b>Check-out:</b> 
-                <%= new Date(booking.endDate).toDateString() %>
-              </p>
-              <p>
-                <b>Guests:</b> <%= booking.guests %>
-              </p>
-
-              <% if(booking.hotel && booking.startDate && booking.endDate){ %>
-                <% 
-                  const days = Math.ceil((new Date(booking.endDate) - new Date(booking.startDate)) / (1000*60*60*24));
-                  const total = days * booking.hotel.price;
-                %>
-                <p><b>Total:</b> ₹ <%= total %> (<%= days %> nights)</p>
-              <% } %>
-
-            </div>
-
-            <div class="card-footer">
-              <span class="badge bg-success">Confirmed ✓</span>
-              <% if(booking.hotel){ %>
-                <a href="/listing/<%= booking.hotel._id %>" 
-                   class="btn btn-sm btn-outline-primary float-end">
-                  View Hotel
-                </a>
-              <% } %>
-            </div>
-
-          </div>
-        </div>
-
-      <% }) %>
-    </div>
-
-  <% } else { %>
-
-    <div class="text-center mt-5">
-      <h4>No bookings yet!</h4>
-      <a href="/listing" class="btn btn-success mt-3">
-        Explore Hotels
-      </a>
-    </div>
-
-  <% } %>
-
-</div> -->
-
 <% layout("/layout/boilerplate") %>
 
 <div class="container mt-4">
@@ -95,47 +12,62 @@
         <div class="col-lg-4 col-md-6 mb-4">
           <div class="card h-100 shadow-sm">
 
+            <!-- ✅ Image check fix केला -->
             <% if(booking.hotel && booking.hotel.image && booking.hotel.image.length > 0){ %>
-              <img src="<%= booking.hotel.image[0].path %>" 
+              <img src="<%= booking.hotel.image[0].url || booking.hotel.image[0].path || booking.hotel.image[0] %>" 
                    class="card-img-top" 
-                   style="height:200px; object-fit:cover;">
+                   style="height:200px; object-fit:cover;"
+                   onerror="this.src='https://via.placeholder.com/400x200?text=No+Image'">
+            <% } else { %>
+              <div class="bg-light d-flex align-items-center justify-content-center"
+                   style="height:200px">
+                <p class="text-muted">🏨 No Image</p>
+              </div>
             <% } %>
 
             <div class="card-body">
 
-              <h5 class="card-title">
+              <h5 class="card-title fw-bold">
                 <%= booking.hotel ? booking.hotel.title : "Hotel Deleted" %>
               </h5>
 
-              <p class="text-muted">
+              <p class="text-muted mb-1">
                 📍 <%= booking.hotel ? booking.hotel.location : "-" %>
               </p>
 
               <hr>
 
-              <p>
+              <p class="mb-1">
                 <b>Check-in:</b> 
                 <%= new Date(booking.startDate).toDateString() %>
               </p>
-              <p>
+              <p class="mb-1">
                 <b>Check-out:</b> 
                 <%= new Date(booking.endDate).toDateString() %>
               </p>
-              <p>
+              <p class="mb-1">
                 <b>Guests:</b> <%= booking.guests %>
               </p>
 
-              <% if(booking.hotel && booking.startDate && booking.endDate){ %>
+              <% if(booking.amount){ %>
+                <p class="mb-1"><b>Amount:</b> ₹ <%= booking.amount %></p>
+              <% } else if(booking.hotel && booking.startDate && booking.endDate){ %>
                 <% 
                   const days = Math.ceil((new Date(booking.endDate) - new Date(booking.startDate)) / (1000*60*60*24));
                   const total = days * booking.hotel.price;
                 %>
-                <p><b>Total:</b> ₹ <%= total %> (<%= days %> nights)</p>
+                <p class="mb-1"><b>Total:</b> ₹ <%= total %> (<%= days %> nights)</p>
+              <% } %>
+
+              <!-- ✅ Payment Status -->
+              <% if(booking.paymentStatus === 'paid'){ %>
+                <span class="badge bg-success mt-2">✅ Paid</span>
+              <% } else { %>
+                <span class="badge bg-warning mt-2">⏳ Pending</span>
               <% } %>
 
             </div>
 
-            <!-- ✅ Cancel button add केला -->
             <div class="card-footer d-flex justify-content-between align-items-center">
               <span class="badge bg-success">Confirmed ✓</span>
 
